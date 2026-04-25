@@ -1,6 +1,6 @@
 {
 	"appId": "com.redbill.app",
-	"appName": "EPRM Accounts",
+	"appName": "Eleprim Accounting",
 	"webDir": "dist",
 	"server": {
 		"androidScheme": "https"
