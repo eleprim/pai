@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0.1 Global Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- 1. Accounts ---
+    function isValidAccount(data) {
+      return data.keys().hasAll(['id', 'name', 'code', 'category', 'createdBy', 'isActive']) &&
+             data.id is string && data.id.size() <= 100 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.code is string && data.code.size() > 0 && data.code.size() <= 20 &&
+             data.category in ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'] &&
+             data.createdBy == request.auth.uid &&
+             data.isActive is bool &&
+             (data.get('order', 0) is number);
+    }
+
+    match /accounts/{accountId} {
+      allow get: if isSignedIn() && isValidId(accountId) && resource.data.createdBy == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.createdBy == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(accountId) && isValidAccount(incoming());
+      allow update: if isSignedIn() && isValidId(accountId) && isValidAccount(incoming()) && (
+        (isVerified() && incoming().createdBy == existing().createdBy)
+      );
+      allow delete: if isSignedIn() && isValidId(accountId) && resource.data.createdBy == request.auth.uid;
+    }
+
+    // --- 2. Journal Entries ---
+    function isValidJournalEntry(data) {
+      return data.keys().hasAll(['id', 'date', 'description', 'status', 'totalDebit', 'totalCredit', 'createdBy', 'createdAt', 'updatedAt']) &&
+             data.id is string &&
+             data.date is string &&
+             data.status in ['Draft', 'Posted'] &&
+             data.totalDebit is number && 
+             data.totalCredit is number &&
+             data.createdBy == request.auth.uid &&
+             (data.get('attachments', []) is list) &&
+             (data.get('reference', '') is string);
+    }
+
+    match /journalEntries/{entryId} {
+      allow get: if isSignedIn() && isValidId(entryId) && resource.data.createdBy == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.createdBy == request.auth.uid;
+      allow create: if isVerified() && isValidId(entryId) && isValidJournalEntry(incoming()) && 
+                    incoming().createdAt == request.time;
+      allow update: if isVerified() && isValidId(entryId) && isValidJournalEntry(incoming()) && 
+                    existing().createdBy == request.auth.uid && 
+                    existing().status != 'Posted' && 
+                    incoming().createdBy == existing().createdBy &&
+                    incoming().updatedAt == request.time;
+      allow delete: if isVerified() && isValidId(entryId) && resource.data.createdBy == request.auth.uid && 
+                    existing().status != 'Posted';
+    }
+
+    // --- 3. Transactions ---
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['id', 'entryId', 'accountId', 'debit', 'credit', 'date', 'createdBy', 'createdAt']) &&
+             data.id is string &&
+             data.entryId is string &&
+             data.accountId is string &&
+             data.debit is number && 
+             data.credit is number &&
+             data.createdBy == request.auth.uid;
+    }
+
+    match /transactions/{txId} {
+      allow get: if isSignedIn() && isValidId(txId) && resource.data.createdBy == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.createdBy == request.auth.uid;
+      allow create: if isVerified() && isValidId(txId) && isValidTransaction(incoming()) &&
+                    existsAfter(/databases/$(database)/documents/journalEntries/$(incoming().entryId)) &&
+                    getAfter(/databases/$(database)/documents/journalEntries/$(incoming().entryId)).data.createdBy == request.auth.uid;
+      allow update: if isVerified() && isValidId(txId) && isValidTransaction(incoming()) && 
+                    resource.data.createdBy == request.auth.uid &&
+                    get(/databases/$(database)/documents/journalEntries/$(resource.data.entryId)).data.status != 'Posted';
+      allow delete: if isVerified() && isValidId(txId) && 
+                    resource.data.createdBy == request.auth.uid &&
+                    get(/databases/$(database)/documents/journalEntries/$(resource.data.entryId)).data.status != 'Posted';
+    }
+
+    // --- 4. Settings ---
+    function isValidSettings(data) {
+      return data.keys().hasAll(['id', 'orgName', 'currency', 'updatedAt', 'updatedBy']) &&
+             data.orgName is string && data.orgName.size() <= 200 &&
+             data.currency is string && data.currency.size() <= 3 &&
+             data.updatedBy == request.auth.uid;
+    }
+
+    match /settings/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isVerified() && request.auth.uid == userId && isValidSettings(incoming());
+      allow update: if isVerified() && request.auth.uid == userId && isValidSettings(incoming()) && 
+                    incoming().updatedAt == request.time;
+    }
+  }
+}

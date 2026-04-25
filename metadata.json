@@ -1,0 +1,10 @@
+{
+  "name": "Remix: EPRM Accounting",
+  "description": "Professional-grade accounting application with manual journal entries, automated financial reporting, and audit trails.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "Accounting",
+    "Financial Reporting",
+    "Audit Trail"
+  ]
+}
