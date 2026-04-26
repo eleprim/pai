@@ -248,14 +248,27 @@ export function AppearanceSettings({ context }: { context: ReturnType<typeof use
         </div>
       </div>
 
-      <div className="mt-8 p-10 bg-zinc-900 border border-white/10 rounded-[3rem] flex flex-col md:flex-row items-center gap-8 text-center md:text-left shadow-2xl relative overflow-hidden group">
-        <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
-        <div className="bg-blue-600/20 p-5 rounded-3xl relative z-10 shrink-0">
-           <Palette className="text-blue-500" size={40} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <div className="bento-card p-10 bg-zinc-900 border border-white/10 rounded-[3rem] flex flex-col md:flex-row items-center gap-8 text-center md:text-left shadow-2xl relative overflow-hidden group">
+          <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+          <div className="bg-blue-600/20 p-5 rounded-3xl relative z-10 shrink-0">
+             <Palette className="text-blue-500" size={40} />
+          </div>
+          <div className="relative z-10">
+            <h4 className="text-white text-xl font-black tracking-tight mb-2">Automated Identity Sync</h4>
+            <p className="text-zinc-500 text-sm max-w-sm font-medium">Display attributes are persistantly mapped to your cloud-verified ledger profile across all authenticated nodes.</p>
+          </div>
         </div>
-        <div className="relative z-10">
-          <h4 className="text-white text-xl font-black tracking-tight mb-2">Automated Identity Sync</h4>
-          <p className="text-zinc-500 text-sm max-w-sm font-medium">Display attributes are persistantly mapped to your cloud-verified ledger profile across all authenticated nodes.</p>
+
+        <div className="bento-card p-10 bg-zinc-900 border border-white/10 rounded-[3rem] flex flex-col md:flex-row items-center gap-8 text-center md:text-left shadow-2xl relative overflow-hidden group">
+          <div className="absolute inset-0 bg-emerald-600/5 group-hover:bg-emerald-600/10 transition-colors" />
+          <div className="bg-emerald-600/20 p-5 rounded-3xl relative z-10 shrink-0">
+             <Building2 className="text-emerald-500" size={40} />
+          </div>
+          <div className="relative z-10">
+            <h4 className="text-white text-xl font-black tracking-tight mb-2">Mobile Build Engine</h4>
+            <p className="text-zinc-500 text-sm max-w-sm font-medium">Debug builds are automatically generated via CI/CD pipelines. Check the project repository artifacts for the latest APK.</p>
+          </div>
         </div>
       </div>
     </div>

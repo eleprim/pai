@@ -346,8 +346,9 @@ export const ledgerService = {
         // Create default settings if they don't exist
         const defaultSettings: AppSettings = {
           id: auth.currentUser.uid,
-          orgName: 'EPRM Accounting',
+          orgName: 'Eleprim Ledger',
           currency: 'USD',
+          pinnedAccounts: [],
           updatedAt: serverTimestamp(),
           updatedBy: auth.currentUser.uid
         };
@@ -367,11 +368,11 @@ export const ledgerService = {
     const path = 'settings';
     try {
       const settingsRef = doc(db, path, auth.currentUser.uid);
-      await updateDoc(settingsRef, {
+      await setDoc(settingsRef, {
         ...updates,
         updatedAt: serverTimestamp(),
         updatedBy: auth.currentUser.uid
-      });
+      }, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }

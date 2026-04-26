@@ -8,7 +8,6 @@ service cloud.firestore {
 
     // 0.1 Global Helpers
     function isSignedIn() { return request.auth != null; }
-    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
@@ -30,20 +29,18 @@ service cloud.firestore {
       allow list: if isSignedIn() && resource.data.createdBy == request.auth.uid;
       allow create: if isSignedIn() && isValidId(accountId) && isValidAccount(incoming());
       allow update: if isSignedIn() && isValidId(accountId) && isValidAccount(incoming()) && (
-        (isVerified() && incoming().createdBy == existing().createdBy)
+        (isSignedIn() && incoming().createdBy == existing().createdBy)
       );
       allow delete: if isSignedIn() && isValidId(accountId) && resource.data.createdBy == request.auth.uid;
     }
 
     // --- 2. Journal Entries ---
     function isValidJournalEntry(data) {
-      return data.keys().hasAll(['id', 'date', 'description', 'status', 'totalDebit', 'totalCredit', 'createdBy', 'createdAt', 'updatedAt']) &&
-             data.id is string &&
-             data.date is string &&
+      return data.date is string &&
              data.status in ['Draft', 'Posted'] &&
              data.totalDebit is number && 
              data.totalCredit is number &&
-             data.createdBy == request.auth.uid &&
+             data.createdBy is string &&
              (data.get('attachments', []) is list) &&
              (data.get('reference', '') is string);
     }
@@ -51,14 +48,16 @@ service cloud.firestore {
     match /journalEntries/{entryId} {
       allow get: if isSignedIn() && isValidId(entryId) && resource.data.createdBy == request.auth.uid;
       allow list: if isSignedIn() && resource.data.createdBy == request.auth.uid;
-      allow create: if isVerified() && isValidId(entryId) && isValidJournalEntry(incoming()) && 
+      allow create: if isSignedIn() && isValidId(entryId) && isValidJournalEntry(incoming()) && 
+                    incoming().createdBy == request.auth.uid &&
+                    incoming().keys().hasAll(['id', 'date', 'description', 'status', 'totalDebit', 'totalCredit', 'createdBy', 'createdAt', 'updatedAt']) &&
                     incoming().createdAt == request.time;
-      allow update: if isVerified() && isValidId(entryId) && isValidJournalEntry(incoming()) && 
+      allow update: if isSignedIn() && isValidId(entryId) && isValidJournalEntry(incoming()) && 
                     existing().createdBy == request.auth.uid && 
                     existing().status != 'Posted' && 
                     incoming().createdBy == existing().createdBy &&
                     incoming().updatedAt == request.time;
-      allow delete: if isVerified() && isValidId(entryId) && resource.data.createdBy == request.auth.uid && 
+      allow delete: if isSignedIn() && isValidId(entryId) && resource.data.createdBy == request.auth.uid && 
                     existing().status != 'Posted';
     }
 
@@ -76,13 +75,13 @@ service cloud.firestore {
     match /transactions/{txId} {
       allow get: if isSignedIn() && isValidId(txId) && resource.data.createdBy == request.auth.uid;
       allow list: if isSignedIn() && resource.data.createdBy == request.auth.uid;
-      allow create: if isVerified() && isValidId(txId) && isValidTransaction(incoming()) &&
+      allow create: if isSignedIn() && isValidId(txId) && isValidTransaction(incoming()) &&
                     existsAfter(/databases/$(database)/documents/journalEntries/$(incoming().entryId)) &&
                     getAfter(/databases/$(database)/documents/journalEntries/$(incoming().entryId)).data.createdBy == request.auth.uid;
-      allow update: if isVerified() && isValidId(txId) && isValidTransaction(incoming()) && 
+      allow update: if isSignedIn() && isValidId(txId) && isValidTransaction(incoming()) && 
                     resource.data.createdBy == request.auth.uid &&
                     get(/databases/$(database)/documents/journalEntries/$(resource.data.entryId)).data.status != 'Posted';
-      allow delete: if isVerified() && isValidId(txId) && 
+      allow delete: if isSignedIn() && isValidId(txId) && 
                     resource.data.createdBy == request.auth.uid &&
                     get(/databases/$(database)/documents/journalEntries/$(resource.data.entryId)).data.status != 'Posted';
     }
@@ -90,7 +89,12 @@ service cloud.firestore {
     // --- 4. Settings ---
     function isValidSettings(data) {
       return data.orgName is string && data.orgName.size() <= 200 &&
-             data.currency is string && data.currency.size() <= 3;
+             data.currency is string && data.currency.size() <= 3 &&
+             data.updatedAt is timestamp &&
+             data.updatedBy is string &&
+             data.id is string &&
+             (data.get('pinnedAccounts', []) is list) &&
+             (data.get('logoUrl', '') is string);
     }
 
     match /settings/{userId} {
@@ -98,14 +102,11 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.auth.uid == userId && 
                     isValidSettings(incoming()) &&
                     incoming().id == userId &&
-                    incoming().updatedBy == request.auth.uid &&
-                    incoming().keys().hasAll(['id', 'orgName', 'currency', 'updatedAt', 'updatedBy']);
-      allow update: if isSignedIn() && request.auth.uid == userId && 
-                    isValidSettings(incoming()) && 
+                    incoming().updatedBy == request.auth.uid;
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+                    isValidSettings(incoming()) &&
                     incoming().updatedAt == request.time &&
-                    incoming().updatedBy == request.auth.uid &&
-                    incoming().id == existing().id &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['orgName', 'currency', 'updatedAt', 'updatedBy']);
+                    incoming().updatedBy == request.auth.uid;
     }
   }
 }
