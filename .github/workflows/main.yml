@@ -72,7 +72,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          wrapper-validation: off
+          validate-wrappers: false
 
       - name: Sync Capacitor
         run: |
