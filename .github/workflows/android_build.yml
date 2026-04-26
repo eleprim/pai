@@ -46,6 +46,13 @@ jobs:
             chmod +x android/gradlew
           fi
 
+      - name: Regenerate Gradle Wrapper
+        working-directory: android
+        run: |
+          # Use system gradle to regenerate the wrapper in case the checked-in one is corrupt
+          gradle wrapper
+          chmod +x gradlew
+
       - name: Sync Capacitor
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
