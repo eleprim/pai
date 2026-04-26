@@ -51,11 +51,15 @@ jobs:
           fi
 
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: |
+          npx cap update android
+          npx cap sync android
 
       - name: Build Android APK
         run: |
           cd android
+          # Fix potential line ending issues in gradlew (Windows -> Linux transition)
+          sed -i 's/\r$//' gradlew
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
@@ -65,15 +69,18 @@ jobs:
             echo "APK built successfully"
           else
             echo "Build failed - APK not found"
+            # List all APKs found as a backup diagnostic
             find android -name "*.apk"
             exit 1
           fi
 
       - name: Upload APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Eleprim-Accounting-Debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
 
       - name: Job Summary
         run: |
