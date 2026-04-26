@@ -7,30 +7,38 @@ import { cn } from '../lib/utils';
 
 export function AuthView() {
   const [isAuthenticating, setIsAuthenticating] = React.useState(false);
+  const [authStatus, setAuthStatus] = React.useState<string | null>(null);
 
   const login = async () => {
     setIsAuthenticating(true);
+    setAuthStatus("Opening Google Sign-in...");
+    
+    // Set a timeout to reset state if the popup doesn't return
+    const timeout = setTimeout(() => {
+      setAuthStatus(null);
+      setIsAuthenticating(false);
+    }, 45000); // 45 seconds timeout
+
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(auth, provider);
+      clearTimeout(timeout);
     } catch (err: any) {
+      clearTimeout(timeout);
       console.error(err);
       if (err.code === 'auth/popup-blocked') {
-        alert("The sign-in window was blocked. Please enable pop-ups for this site or try opening the app in its own tab.");
+        alert("The sign-in window was blocked. Please enable pop-ups or try the 'Open in New Tab' button below.");
       } else if (err.code === 'auth/popup-closed-by-user') {
-        alert("Login failed because the sign-in window was closed before completion. Please try again.");
+        alert("Login was cancelled. Please try again.");
       } else if (err.code === 'auth/unauthorized-domain' || err.message?.includes('auth/invalid-auth-endpoint')) {
-        alert("Domain Not Authorized: You must add " + window.location.hostname + " to 'Authorized Domains' in your Firebase Authentication settings. If you want your custom domain to show on the login screen, also update your 'authDomain' in the configuration.");
+        alert("Domain Not Authorized: You must add " + window.location.hostname + " to 'Authorized Domains' in your Firebase Authentication settings.");
       } else if (err.message?.includes('missing initial state')) {
-        alert("Login Error: Browser storage is restricted (likely because this is an iframe). Please use the 'Open in new tab' button at the bottom of the screen to log in safely.");
-      } else if (err.code === 'auth/invalid-actionCode') {
-        alert("The action code is invalid or expired. Please try logging in again.");
-      } else if (err.code === 'auth/cancelled-by-user') {
-        // Silently handle cancel
+        alert("Login Error: Browser storage is blocked. This happens inside frames. Use the 'Open in New Tab' button below.");
       } else {
-        alert("Login failed. If issues persist, try opening the app in a new tab. Error: " + (err.message || 'Unknown error'));
+        alert("Login failed: " + (err.message || 'Unknown error'));
       }
+      setAuthStatus(null);
     } finally {
       setIsAuthenticating(false);
     }
@@ -55,24 +63,37 @@ export function AuthView() {
             <div className="space-y-6 pt-4 border-t border-white/5">
               <div className="space-y-4">
                 <p className="text-[10px] text-zinc-400 font-medium px-4 leading-relaxed">
-                  Authentication requires a separate window to work correctly on mobile and inside frames.
+                  Google login requires a secure popup. This is often blocked or broken on mobile and inside preview frames.
                 </p>
-                <button 
-                  onClick={() => window.open(window.location.href, '_blank')}
-                  className="w-full py-4 rounded-[2rem] bg-zinc-800 text-white font-black uppercase tracking-widest text-[10px] hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <ShieldCheck size={14} className="text-wise-green" />
-                  Open in New Tab to Login
-                </button>
+                <div className="bg-zinc-900/50 p-4 rounded-2xl border border-white/5 space-y-3">
+                  <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-black">Recommended Action</p>
+                  <button 
+                    onClick={() => window.open(window.location.href, '_blank')}
+                    className="w-full py-4 rounded-[1.5rem] bg-wise-green text-black font-black uppercase tracking-widest text-[10px] hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-lg shadow-wise-green/10"
+                  >
+                    <ShieldCheck size={14} />
+                    Login in New Tab
+                  </button>
+                </div>
               </div>
               
-              <button
-                onClick={login}
-                disabled={isAuthenticating}
-                className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest hover:text-zinc-300 transition-colors"
-              >
-                Or try signing in here anyway
-              </button>
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  onClick={login}
+                  disabled={isAuthenticating}
+                  className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest hover:text-zinc-300 transition-colors py-2"
+                >
+                  {isAuthenticating ? "Trying standard login..." : "Or try standard login (may fail)"}
+                </button>
+                {isAuthenticating && (
+                   <button 
+                    onClick={() => { setIsAuthenticating(false); setAuthStatus(null); }}
+                    className="text-[8px] text-red-500 font-black uppercase tracking-widest"
+                   >
+                     Reset Locked State
+                   </button>
+                )}
+              </div>
             </div>
           ) : (
             <button
@@ -86,9 +107,12 @@ export function AuthView() {
               )}
             >
               {isAuthenticating ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin"></span>
-                  Processing...
+                <span className="flex flex-col items-center gap-2">
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-zinc-700 border-t-wise-green rounded-full animate-spin"></span>
+                    <span className="text-white">{authStatus || "Processing..."}</span>
+                  </span>
+                  <span className="text-[8px] text-zinc-500 lowercase">Don't close the popup window</span>
                 </span>
               ) : (
                 <>

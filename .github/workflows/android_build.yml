@@ -24,11 +24,11 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Set up JDK 21
+      - name: Set up JDK 17
         id: setup-java
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '17'
           distribution: 'zulu'
 
       - name: Setup Gradle Cache
@@ -45,25 +45,12 @@ jobs:
         run: |
           if [ ! -d "android" ]; then
             npx cap add android
-          else
-            echo "Android directory already exists, skipping 'add'"
           fi
 
-      - name: Regenerate Gradle Wrapper
-        working-directory: android
-        run: |
-          # Use system gradle to regenerate the wrapper
-          gradle wrapper --gradle-version 8.7
-          chmod +x gradlew
-
       - name: Sync Capacitor
-        env:
-          JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         run: npx cap sync android
 
       - name: Build Android APK
-        env:
-          JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         run: |
           cd android
           chmod +x gradlew
