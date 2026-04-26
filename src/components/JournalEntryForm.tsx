@@ -297,28 +297,29 @@ export function JournalEntryForm({
               </tr>
             ))}
           </tbody>
+          <tfoot className="border-t border-white/5 bg-black/20">
+            <tr>
+              <td className="px-4 py-6">
+                <button 
+                  onClick={addLine}
+                  className="flex items-center gap-2 text-[10px] font-black text-wise-green hover:text-wise-green/80 transition-colors uppercase tracking-widest px-5 py-2.5 bg-wise-green/10 rounded-xl"
+                >
+                  <Plus size={14} />
+                  Add Row
+                </button>
+              </td>
+              <td className="px-4 py-6 text-right align-bottom">
+                <p className="text-[9px] font-black text-zinc-500 uppercase mb-1 tracking-widest leading-none">Total Debit</p>
+                <p className="text-xl font-black text-white tracking-tighter">{formatCurrency(totalDebit)}</p>
+              </td>
+              <td className="px-4 py-6 text-right align-bottom">
+                <p className="text-[9px] font-black text-zinc-500 uppercase mb-1 tracking-widest leading-none">Total Credit</p>
+                <p className="text-xl font-black text-white tracking-tighter">{formatCurrency(totalCredit)}</p>
+              </td>
+              <td></td>
+            </tr>
+          </tfoot>
         </table>
-
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 px-6 py-4 border-t border-white/5 bg-black/40">
-          <button 
-            onClick={addLine}
-            className="flex items-center gap-2 text-[10px] font-black text-wise-green hover:text-wise-green/80 transition-colors uppercase tracking-widest px-5 py-2.5 bg-wise-green/10 rounded-xl"
-          >
-            <Plus size={14} />
-            Add Row
-          </button>
-          
-        <div className="flex gap-8 text-right">
-            <div>
-              <p className="text-[9px] font-black text-zinc-500 uppercase mb-1 tracking-widest leading-none">Total Debit</p>
-              <p className="text-xl font-black text-white tracking-tighter">{formatCurrency(totalDebit)}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-black text-zinc-500 uppercase mb-1 tracking-widest leading-none">Total Credit</p>
-              <p className="text-xl font-black text-white tracking-tighter">{formatCurrency(totalCredit)}</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {error && (

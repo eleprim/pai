@@ -28,11 +28,15 @@ import {
   AreaChart, 
   Area,
   XAxis, 
+  YAxis,
+  CartesianGrid,
   Tooltip, 
   ResponsiveContainer, 
   Cell,
   PieChart,
-  Pie
+  Pie,
+  BarChart,
+  Bar
 } from 'recharts';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -51,21 +55,15 @@ export function Dashboard({
   const [isSelectingAccount, setIsSelectingAccount] = React.useState(false);
   const [activeCategoryIndex, setActiveCategoryIndex] = React.useState(0);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [windowWidth, setWindowWidth] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  React.useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const categories = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
-  const activeCategory = categories[activeCategoryIndex];
-
-  const categoryDistributionData = React.useMemo(() => {
-    const data = trialBalance.filter(row => row.category === activeCategory);
-    const total = data.reduce((sum, row) => sum + Math.abs(row.balance), 0);
-    
-    return data.map((row, idx) => ({
-      name: row.accountName,
-      value: Math.abs(row.balance),
-      percentage: total > 0 ? (Math.abs(row.balance) / total * 100).toFixed(0) : 0,
-      color: COLORS[idx % COLORS.length]
-    })).sort((a, b) => b.value - a.value);
-  }, [trialBalance, activeCategory]);
 
   const pinnedAccountIds = settings?.pinnedAccounts || [];
   const pinnedAccounts = trialBalance.filter(row => pinnedAccountIds.includes(row.accountId));
@@ -158,27 +156,40 @@ export function Dashboard({
                                accounts.find(a => a.id === performanceTarget)?.name || 'Account Flow';
 
   return (
-    <div className="max-w-md mx-auto space-y-6 pb-24 md:max-w-4xl px-4">
-      {/* App Header */}
-      <header className="flex items-center justify-between py-8">
-        <div className="flex items-center gap-3">
-          <div className="w-1.5 h-6 bg-wise-green rounded-full shadow-[0_0_15px_var(--color-primary)]" />
-          <h1 className="text-xl font-black text-white tracking-tighter">
-            {settings?.orgName || 'Business Ledger'}
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-           <button className="w-10 h-10 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
-             <Bell size={20} />
-           </button>
-        </div>
-      </header>
+    <div className="max-w-md mx-auto space-y-8 pb-24 lg:max-w-6xl px-4">
+      {/* 1. Main Card - Total Assets */}
+      <section className="pt-6">
+        <div className="bg-wise-green rounded-[2.5rem] p-8 text-black relative overflow-hidden group min-h-[220px] flex flex-col justify-center shadow-2xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/40 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-125 transition-transform duration-700" />
+          
+          {/* Floating Organization Background Text - Asymmetric Peeking */}
+          {(() => {
+            const orgName = settings?.orgName || 'Eleprim Ledger';
+            const words = orgName.split(' ');
+            const word1 = words[0] || 'Eleprim';
+            const word2 = words[1] || 'Ledger';
+            return (
+              <>
+                <div className="absolute -top-6 -left-8 pointer-events-none z-0 select-none">
+                  <span className="text-[5rem] md:text-[8rem] font-black uppercase tracking-tighter leading-none bg-gradient-to-br from-white/30 via-zinc-400/20 to-transparent bg-clip-text text-transparent opacity-60">
+                    {word1}
+                  </span>
+                </div>
+                <div className="absolute -bottom-6 -right-8 pointer-events-none z-0 select-none">
+                  <span className="text-[5rem] md:text-[8rem] font-black uppercase tracking-tighter leading-none bg-gradient-to-tl from-white/30 via-zinc-400/20 to-transparent bg-clip-text text-transparent opacity-60">
+                    {word2}
+                  </span>
+                </div>
+              </>
+            );
+          })()}
 
-      {/* Main Stats Bento Grid */}
-      <section className="grid grid-cols-1 gap-4">
-        {/* Total Assets - Featured Card (Huge) */}
-        <div className="bg-wise-green rounded-[2.5rem] p-8 text-black relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/40 rounded-full -mr-24 -mt-24 blur-3xl group-hover:scale-125 transition-transform duration-700" />
+          {/* Floating Notification Button Inside Card */}
+          <button className="absolute top-6 right-6 w-12 h-12 rounded-full bg-black/10 backdrop-blur-md border border-black/5 flex items-center justify-center text-black hover:bg-black/20 transition-all z-20 group/notif shadow-lg">
+             <Bell size={20} className="group-hover/notif:rotate-12 transition-transform" />
+             <div className="absolute top-3 right-3 w-2.5 h-2.5 bg-black rounded-full border-2 border-wise-green" />
+          </button>
+
           <div className="relative z-10 space-y-6">
             <div className="flex justify-between items-start">
               <div className="w-12 h-12 rounded-2xl bg-black/5 backdrop-blur-md flex items-center justify-center shadow-inner text-black">
@@ -186,23 +197,25 @@ export function Dashboard({
               </div>
               <button 
                 onClick={() => setIsSelectingAccount(true)}
-                className="w-10 h-10 rounded-full bg-black/5 backdrop-blur-sm flex items-center justify-center hover:bg-black/10 transition-colors"
+                className="w-10 h-10 rounded-full bg-black/5 backdrop-blur-sm flex items-center justify-center hover:bg-black/10 transition-colors mr-14"
                 title="Add account card"
               >
                 <Plus size={20} />
               </button>
             </div>
             <div>
-              <p className="text-[10px] font-black opacity-60 uppercase tracking-widest">Global Assets</p>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-1">
+              <p className="text-[10px] font-black opacity-60 uppercase tracking-widest leading-none">Global Valuation</p>
+              <h2 className="text-5xl md:text-7xl font-black tracking-tighter mt-2 mb-1">
                 {formatCurrency(balanceSheet.assets)}
               </h2>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Dynamic Pinned Account Cards - Small Cards */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* 2. Account Cards - Tightened Spacing */}
+      <section className="-mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {pinnedAccounts.map((row) => (
             <motion.div 
               layout
@@ -211,16 +224,12 @@ export function Dashboard({
               key={row.accountId}
               className="bento-card relative group aspect-square flex flex-col justify-between p-5 bg-zinc-900 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.5)] border-white/5 hover:border-wise-green/20 transition-all overflow-hidden"
             >
-              {/* Asymmetric Design Element */}
               <div className="absolute -top-3 -left-3 w-12 h-12 bg-wise-green/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500" />
-              
-              {/* Large Background Icon */}
               <div className="absolute -right-4 -bottom-4 text-white/[0.03] rotate-12 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-0">
                 {row.category === 'Asset' ? <TrendingUp size={120} /> : 
                  row.category === 'Liability' ? <TrendingDown size={120} /> :
                  <PieChartIcon size={120} />}
               </div>
-              
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -230,7 +239,6 @@ export function Dashboard({
               >
                 <MinusCircle size={16} />
               </button>
-              
               <div className={cn(
                 "w-10 h-10 rounded-2xl flex items-center justify-center border shadow-inner relative z-10",
                 row.category === 'Asset' ? "bg-wise-green/10 border-wise-green/10 text-wise-green" :
@@ -244,14 +252,12 @@ export function Dashboard({
                  row.category === 'Revenue' ? <PieChartIcon size={18} /> :
                  <BarChart3 size={18} />}
               </div>
-  
               <div className="relative z-10">
                 <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1 truncate mix-blend-screen">{row.accountName}</p>
                 <h3 className="text-lg font-black text-white truncate tracking-tighter">{formatCurrency(row.balance)}</h3>
               </div>
             </motion.div>
           ))}
-
           <div 
             onClick={() => setIsSelectingAccount(true)}
             className="bento-card border-dashed border-white/10 bg-black/20 flex flex-col items-center justify-center gap-3 text-zinc-600 hover:text-wise-green hover:border-wise-green/30 transition-all cursor-pointer aspect-square"
@@ -259,45 +265,56 @@ export function Dashboard({
             <PlusCircle size={24} />
             <span className="text-[10px] font-black uppercase tracking-widest text-center">Pin Account</span>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Revenue & Ledger Health (Full Width below pinned) */}
-        <section className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bento-card flex flex-col justify-between p-5 md:col-span-1">
-             <p className="text-[10px] font-bold text-wise-green uppercase tracking-widest mb-1">Net Earnings</p>
-             <h3 className="text-xl font-black text-white">{formatCurrency(incomeStatement.netIncome)}</h3>
-             <div className="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
-               <div className="h-full bg-wise-green shadow-[0_0_10px_var(--color-primary)]" style={{ width: `${Math.min(100, (incomeStatement.netIncome / (Math.max(1, incomeStatement.revenue))) * 100)}%` }} />
+      {/* 4 & 5. Net Earnings and Date Selector */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bento-card flex flex-col justify-between p-8 bg-zinc-900 border-white/10">
+             <p className="text-[10px] font-black text-wise-green uppercase tracking-widest mb-1">Total Net Earnings</p>
+             <h3 className="text-3xl font-black text-white">{formatCurrency(incomeStatement.netIncome)}</h3>
+             <div className="mt-6 h-2 w-full bg-white/5 rounded-full overflow-hidden">
+               <div className="h-full bg-wise-green shadow-[0_0_10px_var(--color-primary)] transition-all duration-1000" style={{ width: `${Math.min(100, (incomeStatement.netIncome / (Math.max(1, incomeStatement.revenue))) * 100)}%` }} />
              </div>
           </div>
 
-          <div className={cn(
-            "md:col-span-2 p-5 rounded-[2.5rem] border transition-all flex items-center justify-between",
-            balanceSheet.isBalanced 
-              ? "bg-wise-green/10 border-wise-green/20 text-wise-green" 
-              : "bg-red-500/10 border-red-500/20 text-red-500"
-          )}>
-            <div className="flex items-center gap-4">
-              <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner",
-                balanceSheet.isBalanced ? "bg-wise-green/20" : "bg-red-500/20"
-              )}>
-                {balanceSheet.isBalanced ? <ShieldCheck size={24} /> : <AlertCircle size={24} />}
-              </div>
-              <div>
-                <p className="text-xs font-black uppercase tracking-widest">
-                  {balanceSheet.isBalanced ? "Ledger Integrity Verified" : "Data Inconsistency Detected"}
-                </p>
-                <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest">System Health Audit</p>
+          <div className="flex flex-col gap-4">
+            {/* Quick Actions (Date Selector) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="flex-1 flex items-center bg-zinc-900 border border-white/10 p-2 sm:p-3 px-4 sm:px-5 rounded-[1.5rem] sm:rounded-[2rem] shadow-xl overflow-hidden">
+                <div className="flex items-center gap-2 pr-3 sm:pr-4 border-r border-white/5 shrink-0">
+                  <Calendar className="text-wise-green" size={14} />
+                  <select 
+                    onChange={(e) => handlePresetChange(e.target.value)}
+                    className="bg-transparent border-none text-[8px] font-black text-white uppercase tracking-widest focus:ring-0 cursor-pointer p-0 h-auto appearance-none"
+                    defaultValue="all"
+                  >
+                    <option value="week" className="bg-zinc-900">Weekly</option>
+                    <option value="month" className="bg-zinc-900">Monthly</option>
+                    <option value="year" className="bg-zinc-900">Yearly</option>
+                    <option value="all" className="bg-zinc-900">Lifetime</option>
+                  </select>
+                </div>
+                <div className="flex flex-1 items-center justify-between gap-1 overflow-hidden ml-2 sm:ml-4">
+                  <input 
+                    type="date"
+                    value={context.dateRange.start}
+                    onChange={(e) => context.setDateRange({ ...context.dateRange, start: e.target.value })}
+                    className="bg-transparent text-white text-[9px] sm:text-[10px] font-black focus:outline-none w-[85px] sm:w-[95px] [color-scheme:dark]"
+                  />
+                  <ArrowRight size={10} className="text-zinc-700 shrink-0" />
+                  <input 
+                    type="date"
+                    value={context.dateRange.end}
+                    onChange={(e) => context.setDateRange({ ...context.dateRange, end: e.target.value })}
+                    className="bg-transparent text-white text-[9px] sm:text-[10px] font-black focus:outline-none w-[85px] sm:w-[95px] [color-scheme:dark] text-right"
+                  />
+                </div>
               </div>
             </div>
-            <div className={cn(
-               "w-5 h-5 rounded-full border-4 border-black",
-               balanceSheet.isBalanced ? "bg-wise-green shadow-[0_0_10px_var(--color-primary)]" : "bg-red-500"
-            )} />
           </div>
-        </section>
       </section>
+
 
       {/* Analytics Section */}
       <section className="space-y-4">
@@ -328,16 +345,31 @@ export function Dashboard({
             <span className="text-[10px] font-black text-wise-green bg-wise-green/10 px-2 py-1 rounded-md uppercase tracking-widest">{activePerformanceLabel}</span>
           </div>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+            <AreaChart data={performanceData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
               <defs>
                 <linearGradient id="colorFlow" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3}/>
                   <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
                 </linearGradient>
               </defs>
+              <CartesianGrid 
+                vertical={false} 
+                stroke="rgba(255,255,255,0.03)" 
+                strokeDasharray="3 3" 
+              />
               <XAxis 
                 dataKey="date" 
-                hide 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 8, fontWeight: 900 }}
+                dy={10}
+              />
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 8, fontWeight: 900 }}
+                tickFormatter={(val) => formatCurrency(val).split('.')[0]} // Remove decimals for cleaner Y-axis
+                dx={-10}
               />
               <Area 
                 type="monotone" 
@@ -352,149 +384,123 @@ export function Dashboard({
               />
               <Tooltip 
                 cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }}
-                contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '10px', padding: '12px' }}
+                contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '10px', padding: '12px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
                 itemStyle={{ color: 'var(--color-primary)', fontWeight: '900' }}
                 labelStyle={{ color: '#fff', marginBottom: '4px', opacity: 0.5 }}
+                formatter={(value: number) => [formatCurrency(value), 'Flow']}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Category Distribution Swipable Card - Medium Card (Moved under flow graph) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bento-card relative overflow-hidden bg-zinc-900 border-white/5 shadow-2xl flex flex-col group/dist min-h-[350px]">
-            <div className="p-6 flex justify-between items-center relative z-10">
-              <div>
-                <p className="text-[10px] font-black text-wise-green uppercase tracking-widest leading-none mb-1">{activeCategory} Distribution</p>
-                <h4 className="text-xs font-black text-white uppercase tracking-widest">Resource Allocation</h4>
-              </div>
-              <div className="flex gap-1.5">
-                <button 
-                  onClick={() => setActiveCategoryIndex(prev => prev === 0 ? categories.length - 1 : prev - 1)}
-                  className="w-8 h-8 rounded-full bg-black/40 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button 
-                   onClick={() => setActiveCategoryIndex(prev => prev === categories.length - 1 ? 0 : prev + 1)}
-                   className="w-8 h-8 rounded-full bg-black/40 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 relative flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-24 h-24 rounded-full bg-black/40 border border-white/5 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
-                   <p className="text-[8px] font-black text-zinc-600 uppercase">Weight</p>
-                   <p className="text-[11px] font-black text-white">{activeCategory.slice(0, 3).toUpperCase()}</p>
-                </div>
-              </div>
-              
-              <AnimatePresence mode="wait">
-                <motion.div 
-                  key={activeCategory}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="w-full h-[220px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={categoryDistributionData.length > 0 ? categoryDistributionData : [{ name: 'Empty', value: 1, color: '#27272a' }]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={65}
-                        outerRadius={85}
-                        paddingAngle={5}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {(categoryDistributionData.length > 0 ? categoryDistributionData : [{ name: 'Empty', value: 1, color: '#27272a' }]).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="bg-black/90 backdrop-blur-md border border-white/10 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-2xl">
-                                {payload[0].name}: {payload[0].payload.percentage}%
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <div className="px-6 pb-6 overflow-hidden mt-auto">
-               <div className="flex gap-4 overflow-x-auto py-1 no-scrollbar">
-                 {categoryDistributionData.map((item, idx) => (
-                   <div key={idx} className="flex items-center gap-2 shrink-0">
-                      <div className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: item.color, color: item.color }} />
-                      <span className="text-[9px] font-black text-zinc-400 uppercase whitespace-nowrap">{item.name}</span>
-                   </div>
-                 ))}
-               </div>
-            </div>
-          </div>
-          
-          <div className="hidden md:flex bento-card border-none bg-transparent items-center justify-center text-zinc-800 text-[10px] font-black uppercase tracking-[0.3em] rotate-90 opacity-20 pointer-events-none">
-             Global Distribution Matrix System
-          </div>
-        </div>
       </section>
 
-      {/* Period Coverage Controls - Mobile Optimized */}
-      <section className="bento-card overflow-hidden">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar className="text-zinc-500" size={16} />
-              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Reporting Period</span>
-            </div>
-            <select 
-              onChange={(e) => handlePresetChange(e.target.value)}
-              className="bg-transparent border-none text-[10px] font-black text-wise-green uppercase tracking-widest focus:ring-0 cursor-pointer"
-              defaultValue="all"
+      {/* Category Distribution Stacked Cards */}
+      <section className="space-y-6">
+        <div className="px-2 flex justify-between items-end">
+          <div>
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">Global Distributions</p>
+            <h3 className="text-sm font-black text-white uppercase tracking-widest">Resource Allocation</h3>
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setActiveCategoryIndex(prev => prev === 0 ? categories.length - 1 : prev - 1)}
+              className="w-10 h-10 rounded-full border border-white/5 bg-zinc-900 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
             >
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="year">This Year</option>
-              <option value="all">Full History</option>
-            </select>
+              <ChevronLeft size={16} />
+            </button>
+            <button 
+              onClick={() => setActiveCategoryIndex(prev => (prev + 1) % categories.length)}
+              className="w-10 h-10 rounded-full border border-white/5 bg-zinc-900 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
-          <div className="flex items-center justify-between gap-4">
-             <div className="flex-1 bg-black/30 rounded-xl p-2 border border-white/5 text-center">
-               <p className="text-[8px] text-zinc-500 uppercase font-black mb-1 leading-none">From</p>
-               <input 
-                type="date"
-                value={context.dateRange.start}
-                onChange={(e) => context.setDateRange({ ...context.dateRange, start: e.target.value })}
-                className="bg-transparent text-white text-[11px] font-bold w-full text-center focus:outline-none"
-               />
-             </div>
-             <ArrowRight size={14} className="text-zinc-700 shrink-0" />
-             <div className="flex-1 bg-black/30 rounded-xl p-2 border border-white/5 text-center">
-               <p className="text-[8px] text-zinc-500 uppercase font-black mb-1 leading-none">To</p>
-               <input 
-                type="date"
-                value={context.dateRange.end}
-                onChange={(e) => context.setDateRange({ ...context.dateRange, end: e.target.value })}
-                className="bg-transparent text-white text-[11px] font-bold w-full text-center focus:outline-none"
-               />
-             </div>
-          </div>
+        </div>
+
+        <div className="relative h-[450px] md:h-[500px] w-full flex items-center justify-center perspective-[1000px]">
+          <AnimatePresence mode="popLayout">
+            {categories.map((category, idx) => {
+              if (idx !== activeCategoryIndex) return null;
+              
+              const data = trialBalance.filter(row => row.category === category);
+              const totalValue = data.reduce((sum, row) => sum + Math.abs(row.balance), 0);
+              const topAccounts = data.map((row, i) => ({
+                name: row.accountName,
+                value: Math.abs(row.balance),
+                id: row.accountId
+              })).sort((a, b) => b.value - a.value).slice(0, 12);
+
+              const maxValue = Math.max(...topAccounts.map(a => a.value), 0);
+
+              return (
+                <motion.div 
+                  key={category}
+                  initial={{ opacity: 0, scale: 0.9, rotateY: -10, x: 50 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0, x: 0 }}
+                  exit={{ opacity: 0, scale: 1.1, rotateY: 10, x: -100 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  className="absolute inset-0 max-w-[320px] mx-auto bg-wise-green rounded-[3rem] p-8 text-black flex flex-col shadow-[0_40px_80px_rgba(0,0,0,0.25)] overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full -mr-32 -mt-32 blur-3xl" />
+                  
+                  <div className="flex-1 relative z-10 w-full flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="90%">
+                      <BarChart data={topAccounts} margin={{ top: 20, bottom: 0, left: 0, right: 0 }}>
+                        <Tooltip 
+                          cursor={{ fill: 'rgba(0,0,0,0.03)' }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const val = typeof payload[0].value === 'number' ? payload[0].value : Number(payload[0].value);
+                              const name = payload[0].payload.name;
+                              return (
+                                <div className="bg-black text-white px-4 py-2 rounded-2xl text-[10px] font-black tracking-tight shadow-2xl flex flex-col gap-0.5">
+                                  <span className="opacity-40 uppercase text-[8px] whitespace-nowrap">{name}</span>
+                                  <span className="text-sm">{formatCurrency(val).split('.')[0]}</span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar 
+                          dataKey="value" 
+                          radius={[100, 100, 100, 100]} 
+                          barSize={topAccounts.length <= 2 ? 80 : topAccounts.length <= 4 ? 50 : topAccounts.length <= 8 ? 24 : 16}
+                        >
+                          {topAccounts.map((_, i) => (
+                            <Cell 
+                              key={`cell-${i}`} 
+                              fill="#000000"
+                              fillOpacity={0.8 - (i * 0.04)}
+                              className="transition-all duration-500 hover:fill-opacity-100 cursor-pointer"
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="relative z-10 mt-6 pt-6 border-t border-black/5 flex justify-between items-center">
+                    <div>
+                       <p className="text-[10px] font-black text-black/60 uppercase tracking-widest leading-none mb-1">{category}</p>
+                       <p className="text-[8px] font-black text-black/30 uppercase tracking-[0.2em] leading-none">ELS AUDIT SECURE</p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {categories.map((_, i) => (
+                        <div key={i} className={cn("h-1.5 rounded-full transition-all duration-500", i === activeCategoryIndex ? "bg-black w-6" : "bg-black/10 w-1.5")} />
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       </section>
 
+      {/* Remove the standalone reporting period as it's now in the header */}
+
+      {/* Activity Section */}
       <section className="space-y-6 pb-12">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -579,6 +585,35 @@ export function Dashboard({
           </div>
         </div>
       </section>
+
+      <section className="pb-12">
+        <div className={cn(
+          "p-6 flex-1 rounded-[2.5rem] border transition-all flex items-center justify-between mx-1",
+          balanceSheet.isBalanced 
+            ? "bg-wise-green/10 border-wise-green/20 text-wise-green" 
+            : "bg-red-500/10 border-red-500/20 text-red-500"
+        )}>
+          <div className="flex items-center gap-4">
+            <div className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center shadow-inner",
+              balanceSheet.isBalanced ? "bg-wise-green/20" : "bg-red-500/20"
+            )}>
+              {balanceSheet.isBalanced ? <ShieldCheck size={24} /> : <AlertCircle size={24} />}
+            </div>
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest leading-none">
+                {balanceSheet.isBalanced ? "Balanced Assets" : "Audit Discrepancy"}
+              </h4>
+              <p className="text-[10px] font-bold opacity-60 uppercase tracking-[0.2em] mt-1.5">System Integrity Status</p>
+            </div>
+          </div>
+          <div className={cn(
+             "w-4 h-4 rounded-full border-4 border-black",
+             balanceSheet.isBalanced ? "bg-wise-green shadow-[0_0_10px_var(--color-primary)]" : "bg-red-500"
+          )} />
+        </div>
+      </section>
+
       {/* Selection Modal */}
       <AnimatePresence>
         {isSelectingAccount && (

@@ -8,7 +8,6 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
   build:
@@ -29,6 +28,7 @@ jobs:
         run: npm run build
 
       - name: Set up JDK 21
+        id: setup-java
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -47,13 +47,17 @@ jobs:
           fi
 
       - name: Sync Capacitor
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         run: npx cap sync android
 
       - name: Build Android APK
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

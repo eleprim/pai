@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   LogOut, 
   User, 
@@ -54,7 +55,8 @@ export function UserProfile({ context }: { context: ReturnType<typeof useReporti
   const [orgName, setOrgName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<'info' | 'config'>('info');
+  const [activeSubTab, setActiveSubTab] = useState<'user' | 'enterprise' | 'about'>('user');
+  const [aboutSlideIndex, setAboutSlideIndex] = useState(0);
 
   useEffect(() => {
     if (appSettings) {
@@ -127,54 +129,81 @@ export function UserProfile({ context }: { context: ReturnType<typeof useReporti
       {/* Sub Navigation */}
       <div className="flex bg-zinc-900/50 p-1 rounded-2xl border border-white/5">
         <button 
-          onClick={() => setActiveSubTab('info')}
+          onClick={() => setActiveSubTab('user')}
           className={cn(
             "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-            activeSubTab === 'info' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
+            activeSubTab === 'user' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
           )}
         >
-          Profile Info
+          User Info
         </button>
         <button 
-          onClick={() => setActiveSubTab('config')}
+          onClick={() => setActiveSubTab('enterprise')}
           className={cn(
             "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-            activeSubTab === 'config' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
+            activeSubTab === 'enterprise' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
           )}
         >
-          Terminal Config
+          Enterprise Info
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('about')}
+          className={cn(
+            "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+            activeSubTab === 'about' ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
+          )}
+        >
+          About Info
         </button>
       </div>
 
       <div className="min-h-[400px]">
-        {activeSubTab === 'info' ? (
-          <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
-            <section className="bento-card divide-y divide-white/5 overflow-hidden shadow-2xl border-white/5 bg-zinc-900/50">
-              <div className="p-8 space-y-8">
-                <ProfileItem icon={Mail} label="Email Address" value={user.email || 'N/A'} />
-                <ProfileItem 
-                  icon={Calendar} 
-                  label="Last Session" 
-                  value={user.metadata.lastSignInTime ? format(new Date(user.metadata.lastSignInTime), 'MMM d, yyyy • p') : 'Active Now'} 
-                />
-                <ProfileItem 
-                  icon={ShieldCheck} 
-                  label="Access Provider" 
-                  value={user.providerData[0]?.providerId.split('.')[0] || 'Primary Login'} 
-                  isCapitalize
-                />
+        {activeSubTab === 'user' && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bento-card p-6 bg-zinc-900 border-white/5 flex flex-col gap-4">
+                <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-zinc-500 border border-white/5">
+                  <Mail size={18} />
+                </div>
+                <div>
+                   <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Email Identity</p>
+                   <p className="text-sm font-black text-white truncate">{user.email || 'N/A'}</p>
+                </div>
               </div>
 
-              <div className="p-6 bg-black/40">
-                <button 
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-3 py-4 bg-zinc-800 hover:bg-red-500/10 text-zinc-400 hover:text-red-500 rounded-2xl border border-white/5 hover:border-red-500/20 transition-all font-black uppercase tracking-widest text-[10px]"
-                >
-                  <LogOut size={16} />
-                  Secure Logout
-                </button>
+              <div className="bento-card p-6 bg-zinc-900 border-white/5 flex flex-col gap-4">
+                <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-zinc-500 border border-white/5">
+                  <Calendar size={18} />
+                </div>
+                <div>
+                   <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Last Sync</p>
+                   <p className="text-sm font-black text-white">{user.metadata.lastSignInTime ? format(new Date(user.metadata.lastSignInTime), 'MMM d, yyyy') : 'Live'}</p>
+                </div>
               </div>
-            </section>
+
+              <div className="bento-card p-6 bg-zinc-900 border-white/5 flex flex-col gap-4 col-span-1 md:col-span-2">
+                <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-wise-green border border-white/5">
+                  <ShieldCheck size={18} />
+                </div>
+                <div className="flex justify-between items-end">
+                   <div>
+                      <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Security Node</p>
+                      <p className="text-sm font-black text-white capitalize">{user.providerData[0]?.providerId.split('.')[0] || 'Primary'}</p>
+                   </div>
+                   <div className="text-right">
+                      <p className="text-[8px] font-black text-wise-green/40 uppercase tracking-widest">Encrypted Auth</p>
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-3 py-4 bg-zinc-800 hover:bg-red-500/10 text-zinc-400 hover:text-red-500 rounded-2xl border border-white/5 hover:border-red-500/20 transition-all font-black uppercase tracking-widest text-[10px]"
+            >
+              <LogOut size={16} />
+              Terminate Session
+            </button>
 
             <div className="bg-wise-green/5 border border-wise-green/10 p-6 rounded-[2.5rem] flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-wise-green/10 flex items-center justify-center text-wise-green border border-wise-green/20 shrink-0">
@@ -182,120 +211,251 @@ export function UserProfile({ context }: { context: ReturnType<typeof useReporti
               </div>
               <div className="flex-1">
                 <h4 className="text-[10px] font-black text-wise-green uppercase tracking-[0.1em]">Ledger Protection</h4>
-                <p className="text-[11px] text-zinc-500 leading-relaxed font-medium mt-1">Your financial data is encrypted and tied to your biometrically-secured cloud identity. Access is restricted to your verified account.</p>
+                <p className="text-[11px] text-zinc-500 leading-relaxed font-medium mt-1">Access is restricted to your verified account via biometrically-secured cloud identity.</p>
               </div>
             </div>
           </div>
-        ) : (
+        )}
+
+        {activeSubTab === 'enterprise' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-            {/* Enterprise Info Section */}
-            <section className="bento-card p-6 bg-zinc-900/50 border-white/5 space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Building2 size={20} className="text-wise-green" />
-                  <h3 className="text-sm font-black uppercase tracking-tight text-white">Enterprise Profile</h3>
+            <section className="bento-card divide-y divide-white/5 overflow-hidden shadow-2xl border-white/5 bg-zinc-900/50">
+              {/* Enterprise Settings Section */}
+              <div className="p-8 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Building2 size={20} className="text-wise-green" />
+                    <h3 className="text-sm font-black uppercase tracking-tight text-white">Enterprise Profile</h3>
+                  </div>
+                  <button
+                    onClick={handleSaveSettings}
+                    disabled={isSaving || (orgName === appSettings?.orgName && logoUrl === appSettings?.logoUrl)}
+                    className="bg-wise-green text-black h-10 px-4 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
+                  >
+                    <Save size={14} />
+                    {isSaving ? 'Sync' : 'Apply'}
+                  </button>
                 </div>
-                <button
-                  onClick={handleSaveSettings}
-                  disabled={isSaving || (orgName === appSettings?.orgName && logoUrl === appSettings?.logoUrl)}
-                  className="bg-wise-green text-black h-10 px-4 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
-                >
-                  <Save size={14} />
-                  {isSaving ? 'Sync' : 'Apply'}
-                </button>
+
+                <div className="space-y-4">
+                  <div className="space-y-2 text-left">
+                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Ledger Entity</label>
+                    <input 
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 font-bold text-sm focus:outline-none focus:ring-1 focus:ring-wise-green/20 transition-all text-white"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2 text-left">
+                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Valuation Currency</label>
+                    <select 
+                      value={appSettings?.currency || 'USD'}
+                      onChange={(e) => handleUpdateCurrency(e.target.value)}
+                      className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 font-bold text-sm focus:outline-none focus:ring-1 focus:ring-wise-green/20 transition-all text-white"
+                    >
+                      {CURRENCIES.map(c => (
+                        <option key={c.code} value={c.code}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Ledger Entity</label>
-                  <input 
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
-                    className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 font-bold text-sm focus:outline-none focus:ring-1 focus:ring-wise-green/20 transition-all text-white"
-                  />
+              {/* Preferences Section */}
+              <div className="p-8 space-y-6">
+                <div className="flex items-center gap-3">
+                  <Palette size={20} className="text-wise-green" />
+                  <h3 className="text-sm font-black uppercase tracking-tight text-white">Interface Customization</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Accent Theme</label>
+                    <div className="grid grid-cols-4 gap-2">
+                       {COLORS.slice(0, 8).map((c) => (
+                         <button
+                           key={c.value}
+                           onClick={() => setSettings({ ...appearance, primaryColor: c.value })}
+                           className={cn(
+                             "w-full aspect-square rounded-lg border-2 transition-all flex items-center justify-center",
+                             appearance.primaryColor === c.value ? "border-white" : "border-transparent opacity-40"
+                           )}
+                           style={{ backgroundColor: c.value }}
+                         />
+                       ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Typography</label>
+                    <div className="space-y-2">
+                        {(['sans', 'mono'] as FontStyle[]).map((f) => (
+                          <button
+                            key={f}
+                            onClick={() => setSettings({ ...appearance, font: f })}
+                            className={cn(
+                              "w-full flex items-center justify-between p-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest",
+                              appearance.font === f ? "bg-white text-black" : "bg-black/40 border-white/5 text-zinc-500"
+                            )}
+                          >
+                            {f}
+                            {appearance.font === f && <Check size={12} />}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Layout Density */}
+              <div className="p-8 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Grid size={20} className="text-wise-green" />
+                  <h3 className="text-sm font-black uppercase tracking-tight text-white">Enterprise Density</h3>
+                </div>
+                <div className="flex gap-2">
+                  {(['comfortable', 'compact'] as Density[]).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setSettings({ ...appearance, density: d })}
+                      className={cn(
+                        "flex-1 py-4 px-4 rounded-2xl border transition-all text-left",
+                        appearance.density === d ? "bg-white text-black" : "bg-black border-white/5 text-zinc-500"
+                      )}
+                    >
+                      <p className="text-[10px] font-black uppercase tracking-widest">{d}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+         {activeSubTab === 'about' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300 py-4">
+            {/* 1. Static Brand Card */}
+            <div className="bg-black border border-white/10 rounded-[3rem] p-8 shadow-2xl">
+              <div className="flex flex-col items-center gap-8 py-4">
+                <div className="text-center space-y-2">
+                  <h3 className="text-2xl font-black text-white tracking-widest uppercase">ELS</h3>
+                  <p className="text-[12px] font-black text-zinc-500 uppercase tracking-[0.2em]">Eleprim Ledger System</p>
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Valuation Currency</label>
-                  <select 
-                    value={appSettings?.currency || 'USD'}
-                    onChange={(e) => handleUpdateCurrency(e.target.value)}
-                    className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 font-bold text-sm focus:outline-none focus:ring-1 focus:ring-wise-green/20 transition-all text-white"
-                  >
-                    {CURRENCIES.map(c => (
-                      <option key={c.code} value={c.code}>{c.name}</option>
-                    ))}
-                  </select>
+                <div className="relative group">
+                  <div className="w-56 h-28 bg-zinc-900 border border-white/5 rounded-[2.5rem] flex items-center justify-center gap-6 p-6 relative z-10 shadow-inner">
+                    <div className="relative w-10 h-10 flex flex-col gap-1.5 transform rotate-[-15deg]">
+                      <div className="w-10 h-2 bg-white rounded-sm transform skew-x-[-30deg]" />
+                      <div className="w-8 h-2 bg-white rounded-sm transform skew-x-[-30deg] translate-x-1" />
+                      <div className="w-5 h-2 bg-white rounded-sm transform skew-x-[-30deg] translate-x-2" />
+                    </div>
+                    <span className="text-3xl font-light text-white tracking-tight font-sans">eleprim</span>
+                  </div>
                 </div>
               </div>
-            </section>
-
-            {/* Appearance Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bento-card p-6 bg-zinc-900/50 border-white/5 space-y-4">
-                   <div className="flex items-center gap-3">
-                     <Palette size={18} className="text-wise-green" />
-                     <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Accent</h3>
-                   </div>
-                   <div className="grid grid-cols-4 gap-2">
-                     {COLORS.slice(0, 8).map((c) => (
-                       <button
-                         key={c.value}
-                         onClick={() => setSettings({ ...appearance, primaryColor: c.value })}
-                         className={cn(
-                           "w-full aspect-square rounded-lg border-2 transition-all flex items-center justify-center",
-                           appearance.primaryColor === c.value ? "border-white" : "border-transparent opacity-40"
-                         )}
-                         style={{ backgroundColor: c.value }}
-                       />
-                     ))}
-                   </div>
-                </div>
-
-                <div className="bento-card p-6 bg-zinc-900/50 border-white/5 space-y-4">
-                   <div className="flex items-center gap-3">
-                     <Type size={18} className="text-wise-green" />
-                     <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Font</h3>
-                   </div>
-                   <div className="space-y-2">
-                      {(['sans', 'mono'] as FontStyle[]).map((f) => (
-                        <button
-                          key={f}
-                          onClick={() => setSettings({ ...appearance, font: f })}
-                          className={cn(
-                            "w-full flex items-center justify-between p-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest",
-                            appearance.font === f ? "bg-white text-black" : "bg-black/40 border-white/5 text-zinc-500"
-                          )}
-                        >
-                          {f}
-                          {appearance.font === f && <Check size={12} />}
-                        </button>
-                      ))}
-                   </div>
-                </div>
             </div>
 
-            {/* Density Section */}
-            <section className="bento-card p-6 bg-zinc-900/80 border-white/10 space-y-4">
-              <div className="flex items-center gap-3">
-                <Grid size={20} className="text-wise-green" />
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Terminal Density</h3>
+            {/* 2. Swipable Area for remaining cards */}
+            <div className="relative flex flex-col items-center gap-6">
+              <div className="w-full overflow-hidden">
+                <motion.div 
+                  drag="x"
+                  dragConstraints={{ left: -960, right: 0 }}
+                  onDragEnd={(_, info) => {
+                    const threshold = 100;
+                    if (info.offset.x < -threshold && aboutSlideIndex < 3) {
+                      setAboutSlideIndex(prev => prev + 1);
+                    } else if (info.offset.x > threshold && aboutSlideIndex > 0) {
+                      setAboutSlideIndex(prev => prev - 1);
+                    }
+                  }}
+                  animate={{ x: -aboutSlideIndex * 320 }} // Assuming roughly 320px width per card
+                  className="flex gap-4 cursor-grab active:cursor-grabbing px-4"
+                  style={{ width: '400%' }}
+                >
+                  {/* Card 2: Architect */}
+                  <div className="w-[calc(25%-16px)] shrink-0 bg-zinc-900 border border-white/5 rounded-[3rem] p-8 shadow-xl min-h-[220px]">
+                    <div className="mb-6">
+                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">System Details: DEVELOPER</p>
+                    </div>
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-wise-green border border-white/5">
+                          <User size={18} />
+                        </div>
+                        <div>
+                          <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Developer</p>
+                          <p className="text-sm font-black text-white whitespace-nowrap">Nhel Angelo Antonio, CTT</p>
+                          <div className="mt-4 flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-default">
+                             <img 
+                               src="https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg" 
+                               alt="Google AI Studio" 
+                               className="w-4 h-4"
+                               referrerPolicy="no-referrer"
+                             />
+                             <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Google AI Studio</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Integrity Statement */}
+                  <div className="w-[calc(25%-16px)] shrink-0 bg-zinc-950 border border-white/5 rounded-[3rem] p-8 shadow-xl min-h-[220px]">
+                    <div className="mb-6">
+                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">System Details: INTEGRITY</p>
+                    </div>
+                    <div className="space-y-4">
+                      <p className="text-[11px] text-zinc-500 leading-relaxed font-black uppercase tracking-tighter">
+                        "ELS represents the peak of financial transparency, ensuring absolute accuracy in enterprise asset tracking."
+                      </p>
+                      <div className="flex items-center gap-2 opacity-30 mt-4">
+                        <span className="text-[8px] font-black text-zinc-600">V 2.4.0</span>
+                        <div className="w-1 h-1 rounded-full bg-zinc-800" />
+                        <span className="text-[8px] font-black text-zinc-600">ELS_CORE</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Target Audience */}
+                  <div className="w-[calc(25%-16px)] shrink-0 bg-zinc-900 border border-white/5 rounded-[3rem] p-8 shadow-xl min-h-[220px]">
+                    <div className="mb-6">
+                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">System Details: ABOUT SYSTEM</p>
+                    </div>
+                    <div className="space-y-4">
+                       <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-wise-green border border-white/5 mb-2">
+                        <Info size={18} />
+                      </div>
+                      <p className="text-[10px] text-zinc-400 leading-relaxed font-black uppercase tracking-tighter">
+                        Ideal for shopkeepers, micro-enterprises, and accounting students looking to practice real-world financial recording on the go.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Card 5: Contact Details */}
+                  <div className="w-[calc(25%-16px)] shrink-0 bg-zinc-950 border border-white/5 rounded-[3rem] p-8 shadow-xl min-h-[220px]">
+                    <div className="mb-6">
+                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">System Details: CONTACT</p>
+                    </div>
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-wise-green border border-white/5">
+                          <Mail size={18} />
+                        </div>
+                        <div>
+                          <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Connect</p>
+                          <p className="text-[11px] font-black text-white whitespace-nowrap">nhelangeloantonio@gmail.com</p>
+                          <p className="text-[11px] font-black text-zinc-400 mt-1">09564236794</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
               </div>
-              <div className="flex gap-2">
-                {(['comfortable', 'compact'] as Density[]).map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setSettings({ ...appearance, density: d })}
-                    className={cn(
-                      "flex-1 py-4 px-4 rounded-xl border transition-all text-left",
-                      appearance.density === d ? "bg-white text-black" : "bg-black border-white/5 text-zinc-500"
-                    )}
-                  >
-                    <p className="text-[10px] font-black uppercase tracking-widest">{d}</p>
-                  </button>
-                ))}
-              </div>
-            </section>
+
+              <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em] animate-pulse">Swipe to explore system details</p>
+            </div>
           </div>
         )}
       </div>

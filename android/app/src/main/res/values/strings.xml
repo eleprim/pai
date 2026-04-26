@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">EPRM Accounts</string>
-    <string name="title_activity_main">EPRM Accounts</string>
+    <string name="app_name">Eleprim Accounting</string>
+    <string name="title_activity_main">Eleprim Accounting</string>
     <string name="package_name">com.redbill.app</string>
     <string name="custom_url_scheme">com.redbill.app</string>
 </resources>
