@@ -22,7 +22,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -40,6 +40,7 @@ jobs:
       - name: Sync Capacitor
         run: |
           if [ -d "android" ]; then
+            npx cap update android
             npx cap sync android
           fi
 
@@ -48,13 +49,13 @@ jobs:
         run: |
           if [ -d "android" ]; then
             cd android
+            echo "Current directory: $(pwd)"
+            ls -la
             sed -i 's/\r$//' gradlew
             chmod +x gradlew
             echo "Starting Gradle build..."
-            # Using -PcapBuildOnly to potentially skip some unnecessary syncs if capacitor plugin uses it
             ./gradlew assembleDebug --no-daemon --stacktrace || { 
-              echo "Gradle build failed. Diagnostic list of files:"
-              ls -R app/src/main/assets/public || echo "Assets not found"
+              echo "Gradle build failed."
               exit 1 
             }
             
@@ -70,9 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Eleprim-Accounting-Debug-APK
-          path: |
-            android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/apk/release/*.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: warn
 
       - name: Setup GitHub Pages
@@ -103,6 +102,6 @@ jobs:
             echo "Check the logs of the 'Build Android APK' step for details." >> $GITHUB_STEP_SUMMARY
           fi
           
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ **Web Deploy**: Deployment triggered." >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.deployment.outputs.page_url }}" != "" ]; then
+            echo "✅ **Web Deploy**: [View Site](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
           fi
