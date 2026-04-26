@@ -22,6 +22,8 @@ export function AuthView() {
         alert("Login failed because the sign-in window was closed before completion. Please try again.");
       } else if (err.code === 'auth/unauthorized-domain' || err.message?.includes('auth/invalid-auth-endpoint')) {
         alert("Domain Not Authorized: You must add " + window.location.hostname + " to 'Authorized Domains' in your Firebase Authentication settings. If you want your custom domain to show on the login screen, also update your 'authDomain' in the configuration.");
+      } else if (err.message?.includes('missing initial state')) {
+        alert("Login Error: Browser storage is restricted (likely because this is an iframe). Please use the 'Open in new tab' button at the bottom of the screen to log in safely.");
       } else if (err.code === 'auth/invalid-actionCode') {
         alert("The action code is invalid or expired. Please try logging in again.");
       } else if (err.code === 'auth/cancelled-by-user') {
@@ -49,48 +51,59 @@ export function AuthView() {
             <p className="text-zinc-500 text-sm leading-relaxed font-medium">Log in to manage your professional accounts with eleprim.</p>
           </div>
           
-          <button
-            onClick={login}
-            disabled={isAuthenticating}
-            className={cn(
-              "w-full flex items-center justify-center gap-4 py-5 rounded-[2rem] font-black uppercase tracking-widest transition-all active:scale-[0.98] text-[10px]",
-              isAuthenticating 
-                ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" 
-                : "bg-wise-green text-black hover:brightness-110 shadow-xl shadow-wise-green/20"
-            )}
-          >
-            {isAuthenticating ? (
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin"></span>
-                Processing...
-              </span>
-            ) : (
-              <>
-                Sign in with Google
-                <LogIn size={14} />
-              </>
-            )}
-          </button>
+          {(isInIframe || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) ? (
+            <div className="space-y-6 pt-4 border-t border-white/5">
+              <div className="space-y-4">
+                <p className="text-[10px] text-zinc-400 font-medium px-4 leading-relaxed">
+                  Authentication requires a separate window to work correctly on mobile and inside frames.
+                </p>
+                <button 
+                  onClick={() => window.open(window.location.href, '_blank')}
+                  className="w-full py-4 rounded-[2rem] bg-zinc-800 text-white font-black uppercase tracking-widest text-[10px] hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ShieldCheck size={14} className="text-wise-green" />
+                  Open in New Tab to Login
+                </button>
+              </div>
+              
+              <button
+                onClick={login}
+                disabled={isAuthenticating}
+                className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest hover:text-zinc-300 transition-colors"
+              >
+                Or try signing in here anyway
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={login}
+              disabled={isAuthenticating}
+              className={cn(
+                "w-full flex items-center justify-center gap-4 py-5 rounded-[2rem] font-black uppercase tracking-widest transition-all active:scale-[0.98] text-[10px]",
+                isAuthenticating 
+                  ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" 
+                  : "bg-wise-green text-black hover:brightness-110 shadow-xl shadow-wise-green/20"
+              )}
+            >
+              {isAuthenticating ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin"></span>
+                  Processing...
+                </span>
+              ) : (
+                <>
+                  Sign in with Google
+                  <LogIn size={14} />
+                </>
+              )}
+            </button>
+          )}
           
           <div className="pt-4 flex flex-col items-center gap-4">
              <div className="flex items-center gap-2 text-[10px] font-black text-wise-green bg-wise-green/10 px-4 py-2 rounded-full border border-wise-green/10 uppercase tracking-widest">
                <ShieldCheck size={12} />
                Secure Cloud Accounting
              </div>
-             
-             {(isInIframe || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) && (
-               <div className="space-y-4 pt-2">
-                 <p className="text-[10px] text-zinc-500 font-medium px-4">
-                   Pop-ups might be blocked on mobile or inside frames. Try opening in a separate tab.
-                 </p>
-                 <button 
-                   onClick={() => window.open(window.location.href, '_blank')}
-                   className="text-[10px] text-wise-green font-black uppercase tracking-widest hover:underline decoration-2 underline-offset-4"
-                 >
-                   Open app in new tab
-                 </button>
-               </div>
-             )}
           </div>
         </div>
 
