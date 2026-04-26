@@ -280,10 +280,10 @@ export function Reports({ context, onAccountClick }: { context: ReturnType<typeo
                   <table className="w-full text-xs border-collapse min-w-[700px]">
                     <thead className="sticky top-0 z-10 bg-zinc-800 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                       <tr>
-                        <th className="px-8 py-5 text-left border-b border-white/5 shrink-0 whitespace-nowrap">Date</th>
-                        <th className="px-8 py-5 text-left border-b border-white/5">Account & Description</th>
-                        <th className="px-8 py-5 text-right border-b border-white/5 w-32">Debit</th>
-                        <th className="px-8 py-5 text-right border-b border-white/5 w-32">Credit</th>
+                        <th className="px-6 py-3 text-left border-b border-white/5 shrink-0 whitespace-nowrap">Date</th>
+                        <th className="px-6 py-3 text-left border-b border-white/5">Account Titles and Explanation</th>
+                        <th className="px-6 py-3 text-right border-b border-white/5 w-24">Debit</th>
+                        <th className="px-6 py-3 text-right border-b border-white/5 w-24">Credit</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -299,7 +299,7 @@ export function Reports({ context, onAccountClick }: { context: ReturnType<typeo
                         if (sortedEntries.length === 0) {
                           return (
                             <tr>
-                              <td colSpan={4} className="px-8 py-24 text-center text-zinc-600 uppercase font-black text-[10px] tracking-widest bg-black/20">
+                              <td colSpan={4} className="px-6 py-12 text-center text-zinc-600 uppercase font-black text-[10px] tracking-widest bg-black/20">
                                 No journal entries found for this period
                               </td>
                             </tr>
@@ -308,57 +308,66 @@ export function Reports({ context, onAccountClick }: { context: ReturnType<typeo
 
                         return sortedEntries.slice(0, gjLimit).map((group) => (
                           <React.Fragment key={group[0].entryId}>
-                            {/* Entry Header row */}
-                            <tr className="bg-white/[0.02]">
-                              <td className="px-8 py-3 font-bold text-zinc-500 whitespace-nowrap align-top">
+                            {/* Entry Date & Reference Row */}
+                            <tr className="bg-white/[0.03] border-t border-white/5">
+                              <td className="px-6 py-2 font-black text-white whitespace-nowrap align-top text-[10px] uppercase tracking-wider">
                                 {new Date(group[0].date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
                               </td>
-                              <td colSpan={3} className="px-8 py-3">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Entry ID: {group[0].entryId.slice(0, 12)}...</span>
-                                  <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">{group[0].description}</span>
-                                </div>
+                              <td colSpan={3} className="px-6 py-2">
+                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest bg-zinc-800/50 px-2 py-0.5 rounded-md border border-white/5">
+                                  Ref: {group[0].entryId.slice(0, 8)}
+                                </span>
                               </td>
                             </tr>
                             {/* Account Rows */}
-                            {group.map((tx, txIdx) => {
+                            {[...group].sort((a, b) => (b.debit || 0) - (a.debit || 0)).map((tx, txIdx) => {
                               const account = accounts.find(a => a.id === tx.accountId);
                               return (
-                                <tr key={tx.id || txIdx} className="hover:bg-white/[0.01] transition-colors">
-                                  <td className="px-8 py-3" />
-                                  <td className="px-12 py-3">
+                                <tr key={tx.id || txIdx} className="hover:bg-white/[0.01] transition-colors group">
+                                  <td className="px-4 py-1" />
+                                  <td className="px-4 py-1">
                                     <button 
                                       onClick={() => onAccountClick?.(tx.accountId)}
                                       className={cn(
-                                        "text-xs font-bold transition-colors text-left",
-                                        tx.credit > 0 ? "ml-8 text-zinc-400" : "text-white"
+                                        "text-xs font-bold transition-all text-left text-zinc-100 group-hover:text-blue-400",
+                                        tx.credit > 0 ? "pl-8" : ""
                                       )}
                                     >
                                       {account?.name || 'Unknown Account'}
                                     </button>
                                   </td>
-                                  <td className="px-8 py-3 text-right tabular-nums font-black text-emerald-500">
+                                  <td className="px-4 py-1 text-right tabular-nums font-black text-emerald-500/90">
                                     {tx.debit > 0 ? formatCurrency(tx.debit) : ''}
                                   </td>
-                                  <td className="px-8 py-3 text-right tabular-nums font-black text-rose-500">
+                                  <td className="px-4 py-1 text-right tabular-nums font-black text-rose-500/90">
                                     {tx.credit > 0 ? formatCurrency(tx.credit) : ''}
                                   </td>
                                 </tr>
                               );
                             })}
-                            {/* Bottom border for entry */}
-                            <tr><td colSpan={4} className="h-4 border-b border-white/10" /></tr>
+                            {/* Entry Explanation row */}
+                            <tr>
+                              <td className="px-6 py-0.5" />
+                              <td colSpan={3} className="px-6 py-1 pb-3">
+                                <div className="pl-8 flex items-start gap-2">
+                                  <div className="w-1 h-1 rounded-full bg-zinc-800 mt-1.5 shrink-0" />
+                                  <p className="text-[10px] font-medium text-zinc-500 italic leading-snug max-w-lg">
+                                    {group[0].description}
+                                  </p>
+                                </div>
+                              </td>
+                            </tr>
                           </React.Fragment>
                         ));
                       })()}
                     </tbody>
                     <tfoot className="sticky bottom-0 bg-zinc-800 font-black text-white border-t-2 border-white/10">
                       <tr>
-                        <td className="px-8 py-6" colSpan={2}>JOURNAL TOTALS</td>
-                        <td className="px-8 py-6 text-right text-emerald-500 underline decoration-2 underline-offset-4">
+                        <td className="px-6 py-4" colSpan={2}>JOURNAL TOTALS</td>
+                        <td className="px-6 py-4 text-right text-emerald-500 underline decoration-2 underline-offset-4">
                           {formatCurrency(filteredTransactions.reduce((sum, r) => sum + (r.debit || 0), 0))}
                         </td>
-                        <td className="px-8 py-6 text-right text-red-500 underline decoration-2 underline-offset-4">
+                        <td className="px-6 py-4 text-right text-red-500 underline decoration-2 underline-offset-4">
                           {formatCurrency(filteredTransactions.reduce((sum, r) => sum + (r.credit || 0), 0))}
                         </td>
                       </tr>

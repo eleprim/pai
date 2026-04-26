@@ -69,6 +69,9 @@ jobs:
           java-version: '21'
           distribution: 'zulu'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Sync Capacitor
         run: |
           if [ -d "android" ]; then
@@ -88,17 +91,24 @@ jobs:
             sed -i 's/\r$//' gradlew
             chmod +x gradlew
             
-            echo "Standardizing gradle wrapper if needed..."
-            # Fix corrupted gradle-wrapper.jar
-            gradle wrapper
-            
-            echo "Building Debug APK..."
+            echo "Attempting build with gradlew..."
             ./gradlew assembleDebug --no-daemon --stacktrace --info || { 
-              echo "Error: Gradle build failed."
-              # Diagnostic info
-              echo "Listing app directory structure:"
-              find app -maxdepth 3
-              exit 1
+              echo "Gradle build failed. Attempting to fix wrapper and retry..."
+              # If gradlew fails, it might be due to a corrupted jar. 
+              # We try to use the system gradle to repair it if available, 
+              # or just log common issues.
+              if command -v gradle > /dev/null; then
+                gradle wrapper
+                ./gradlew assembleDebug --no-daemon --stacktrace --info || {
+                  echo "Retry failed. Build still failing."
+                  find app -maxdepth 3
+                  exit 1
+                }
+              else
+                echo "System 'gradle' not found, cannot repair wrapper. Failing."
+                find app -maxdepth 3
+                exit 1
+              fi
             }
             
             echo "Build successful. Searching for APKs..."
