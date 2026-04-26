@@ -15,7 +15,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -71,3 +71,12 @@ jobs:
         with:
           name: Eleprim-Accounting-Debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Job Summary
+        run: |
+          echo "## 🚀 Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "Your Android APK has been generated successfully." >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 How to download:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to the top of this page (Summary)." >> $GITHUB_STEP_SUMMARY
+          echo "2. Look at the **Artifacts** section at the bottom." >> $GITHUB_STEP_SUMMARY
+          echo "3. Download **Eleprim-Accounting-Debug**." >> $GITHUB_STEP_SUMMARY
