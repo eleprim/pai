@@ -17,11 +17,17 @@ export function AuthView() {
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/popup-blocked') {
-        alert("The sign-in window was blocked. Please enable pop-ups for this site or try opening the app in its own tab using the button in the top right of the preview.");
+        alert("The sign-in window was blocked. Please enable pop-ups for this site or try opening the app in its own tab.");
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        alert("Login failed because the sign-in window was closed before completion. Please try again.");
+      } else if (err.code === 'auth/unauthorized-domain' || err.message?.includes('auth/invalid-auth-endpoint')) {
+        alert("Domain Not Authorized: You must add " + window.location.hostname + " to 'Authorized Domains' in your Firebase Authentication settings. If you want your custom domain to show on the login screen, also update your 'authDomain' in the configuration.");
+      } else if (err.code === 'auth/invalid-actionCode') {
+        alert("The action code is invalid or expired. Please try logging in again.");
       } else if (err.code === 'auth/cancelled-by-user') {
         // Silently handle cancel
       } else {
-        alert("Login failed. If you are in the AI Studio preview, try opening the app in a new tab using the diagonal arrow icon.");
+        alert("Login failed. If issues persist, try opening the app in a new tab. Error: " + (err.message || 'Unknown error'));
       }
     } finally {
       setIsAuthenticating(false);
@@ -72,10 +78,18 @@ export function AuthView() {
                Secure Cloud Accounting
              </div>
              
-             {isInIframe && (
-               <p className="text-[10px] text-zinc-500 font-medium">
-                 Login not working? <span className="text-wise-green">Open in new tab</span>
-               </p>
+             {(isInIframe || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) && (
+               <div className="space-y-4 pt-2">
+                 <p className="text-[10px] text-zinc-500 font-medium px-4">
+                   Pop-ups might be blocked on mobile or inside frames. Try opening in a separate tab.
+                 </p>
+                 <button 
+                   onClick={() => window.open(window.location.href, '_blank')}
+                   className="text-[10px] text-wise-green font-black uppercase tracking-widest hover:underline decoration-2 underline-offset-4"
+                 >
+                   Open app in new tab
+                 </button>
+               </div>
              )}
           </div>
         </div>

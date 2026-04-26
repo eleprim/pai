@@ -34,6 +34,16 @@ jobs:
           java-version: '21'
           distribution: 'zulu'
 
+      - name: Setup Gradle Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: Setup Android platform
         run: |
           if [ ! -d "android" ]; then
@@ -41,16 +51,12 @@ jobs:
           else
             echo "Android directory already exists, skipping 'add'"
           fi
-          # Ensure gradlew has execute permissions before sync, since cap sync runs gradle
-          if [ -f "android/gradlew" ]; then
-            chmod +x android/gradlew
-          fi
 
       - name: Regenerate Gradle Wrapper
         working-directory: android
         run: |
-          # Use system gradle to regenerate the wrapper in case the checked-in one is corrupt
-          gradle wrapper
+          # Use system gradle to regenerate the wrapper
+          gradle wrapper --gradle-version 8.7
           chmod +x gradlew
 
       - name: Sync Capacitor
