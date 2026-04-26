@@ -89,7 +89,8 @@ jobs:
             chmod +x gradlew
             
             echo "Standardizing gradle wrapper if needed..."
-            # Some environments might need this
+            # Fix corrupted gradle-wrapper.jar
+            gradle wrapper
             
             echo "Building Debug APK..."
             ./gradlew assembleDebug --no-daemon --stacktrace --info || { 
