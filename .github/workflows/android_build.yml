@@ -56,8 +56,18 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
+      - name: Verify APK
+        run: |
+          if [ -f android/app/build/outputs/apk/debug/app-debug.apk ]; then
+            echo "APK built successfully"
+          else
+            echo "Build failed - APK not found"
+            find android -name "*.apk"
+            exit 1
+          fi
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: Eleprim-Accounting-Debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
