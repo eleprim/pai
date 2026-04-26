@@ -89,17 +89,23 @@ service cloud.firestore {
 
     // --- 4. Settings ---
     function isValidSettings(data) {
-      return data.keys().hasAll(['id', 'orgName', 'currency', 'updatedAt', 'updatedBy']) &&
-             data.orgName is string && data.orgName.size() <= 200 &&
-             data.currency is string && data.currency.size() <= 3 &&
-             data.updatedBy == request.auth.uid;
+      return data.orgName is string && data.orgName.size() <= 200 &&
+             data.currency is string && data.currency.size() <= 3;
     }
 
     match /settings/{userId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
-      allow create: if isVerified() && request.auth.uid == userId && isValidSettings(incoming());
-      allow update: if isVerified() && request.auth.uid == userId && isValidSettings(incoming()) && 
-                    incoming().updatedAt == request.time;
+      allow create: if isSignedIn() && request.auth.uid == userId && 
+                    isValidSettings(incoming()) &&
+                    incoming().id == userId &&
+                    incoming().updatedBy == request.auth.uid &&
+                    incoming().keys().hasAll(['id', 'orgName', 'currency', 'updatedAt', 'updatedBy']);
+      allow update: if isSignedIn() && request.auth.uid == userId && 
+                    isValidSettings(incoming()) && 
+                    incoming().updatedAt == request.time &&
+                    incoming().updatedBy == request.auth.uid &&
+                    incoming().id == existing().id &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['orgName', 'currency', 'updatedAt', 'updatedBy']);
     }
   }
 }
