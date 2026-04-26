@@ -73,7 +73,7 @@ jobs:
         run: |
           if [ -d "android" ]; then
             echo "Syncing Capacitor..."
-            npx cap sync android --verbose
+            npx cap sync android
           fi
 
       - name: Build Android APK
