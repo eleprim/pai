@@ -17,12 +17,18 @@ export function AuthView() {
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/popup-blocked') {
-        alert("The sign-in window was blocked. Please enable pop-ups for this site or try opening the app in its own tab.");
+        alert("The sign-in window was blocked. Please enable pop-ups for this site or try opening the app in its own tab using the button in the top right of the preview.");
+      } else if (err.code === 'auth/cancelled-by-user') {
+        // Silently handle cancel
+      } else {
+        alert("Login failed. If you are in the AI Studio preview, try opening the app in a new tab using the diagonal arrow icon.");
       }
     } finally {
       setIsAuthenticating(false);
     }
   };
+
+  const isInIframe = window.self !== window.top;
 
   return (
     <div className="min-h-screen bg-wise-bg flex flex-col items-center justify-center p-6 selection:bg-wise-green/30">
@@ -65,6 +71,12 @@ export function AuthView() {
                <ShieldCheck size={12} />
                Secure Cloud Accounting
              </div>
+             
+             {isInIframe && (
+               <p className="text-[10px] text-zinc-500 font-medium">
+                 Login not working? <span className="text-wise-green">Open in new tab</span>
+               </p>
+             )}
           </div>
         </div>
 

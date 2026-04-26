@@ -1,21 +1,27 @@
 {
   "name": "Eleprim Accounting",
   "short_name": "Eleprim",
-  "description": "Integrated Ledger System",
-  "start_url": ".",
+  "description": "Integrated Ledger System for Enterprise Transparency",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#c3f027",
   "icons": [
     {
-      "src": "https://upload.wikimedia.org/wikipedia/commons/4/4c/App_icon_placeholder.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://upload.wikimedia.org/wikipedia/commons/4/4c/App_icon_placeholder.png",
+      "src": "/icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icon.svg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/svg+xml"
     }
   ]
 }
